@@ -98,6 +98,11 @@ dist
 # Sveltekit cache directory
 .svelte-kit/
 
+# Project specific files to ignore
+PROJECT_PLAN.md
+GETTING_STARTED.md
+backend/API_TESTING.md
+
 # vitepress build output
 **/.vitepress/dist
 
