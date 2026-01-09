@@ -3,6 +3,7 @@ const cors = require('cors');
 const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
+const notesRoutes = require('./routes/notesRoutes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/notes', notesRoutes);
 
 // 404 handler
 app.use((req, res) => {
