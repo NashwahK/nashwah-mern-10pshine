@@ -6,10 +6,7 @@ const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const notesRoutes = require('./routes/notesRoutes');
 const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
-const path = require('path');
-
-const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.json'));
+const swaggerDocument = require('./swagger.json');
 
 const app = express();
 
