@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "mocha tests/**/*.test.js --exit",
-    "test:watch": "mocha tests/**/*.test.js --watch"
+    "test": "mocha test/**/*.test.js --exit",
+    "test:coverage": "nyc mocha test/**/*.test.js --exit",
+    "test:watch": "mocha test/**/*.test.js --watch"
   },
   "keywords": [
     "notes",
@@ -31,9 +32,12 @@
   },
   "devDependencies": {
     "chai": "^4.3.10",
+    "chai-http": "^4.4.0",
     "eslint": "^8.55.0",
     "mocha": "^10.2.0",
     "nodemon": "^3.0.2",
+    "nyc": "^15.1.0",
+    "sonarqube-scanner": "^3.2.0",
     "supertest": "^6.3.3"
   }
 }
