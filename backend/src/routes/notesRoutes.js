@@ -23,10 +23,14 @@ router.get(
   [
     query('page').optional().isInt({ min: 1 }).toInt(),
     query('limit').optional().isInt({ min: 1 }).toInt(),
-    query('search').optional().trim()
+    query('search').optional().isString(),
+    query('tag').optional().isString()
   ],
   notesController.getNotes
 );
+
+// Get all tags
+router.get('/tags', authenticate, notesController.getTags);
 
 // Get single
 router.get('/:id', authenticate, notesController.getNote);

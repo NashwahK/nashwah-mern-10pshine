@@ -1,0 +1,8 @@
+organization=nashwahk
+projectKey=nashwah-notes-frontend
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.79246
+branch=develop
+dashboardUrl=https://sonarcloud.io/dashboard?id=nashwah-notes-frontend&branch=develop&resolved=false
+ceTaskId=AZwda4c1paHkuJ05r94p
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AZwda4c1paHkuJ05r94p
