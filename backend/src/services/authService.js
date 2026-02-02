@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
 const logger = require('../config/logger');
+const { sendResetPasswordEmail } = require('../config/emailer');
 
 class AuthService {
   static generateToken(userId) {
@@ -68,6 +69,62 @@ class AuthService {
     }
 
     return user;
+  }
+
+  static async forgotPassword(email) {
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      // Don't reveal if email exists for security
+      logger.warn({ email }, 'Forgot password attempt - user not found');
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = jwt.sign(
+      { userId: user._id, type: 'reset' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Send email with reset link
+    try {
+      await sendResetPasswordEmail(user.email, resetToken);
+      logger.info({ userId: user._id }, 'Password reset email sent successfully');
+    } catch (error) {
+      logger.error({ userId: user._id, error: error.message }, 'Failed to send reset password email');
+      throw new Error('Failed to send reset email. Please try again later.');
+    }
+
+    return resetToken;
+  }
+
+  static async resetPassword(token, newPassword) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      if (decoded.type !== 'reset') {
+        throw new AuthenticationError('Invalid token');
+      }
+
+      const user = await User.findById(decoded.userId);
+      
+      if (!user) {
+        throw new AuthenticationError('User not found');
+      }
+
+      user.password = newPassword;
+      await user.save();
+
+      logger.info({ userId: user._id }, 'Password reset successfully');
+
+      return user;
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new AuthenticationError('Reset link has expired');
+      }
+      throw error;
+    }
   }
 }
 
