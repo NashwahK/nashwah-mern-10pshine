@@ -5,8 +5,7 @@ const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const notesRoutes = require('./routes/notesRoutes');
-const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json');
+const { swaggerUi, specs } = require('./swagger');
 
 const app = express();
 
@@ -29,7 +28,7 @@ app.get('/health', (req, res) => {
 });
 
 // Swagger API docs
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // API Routes
 app.use('/api/auth', authRoutes);
