@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notesAPI } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useNotification } from '../contexts/NotificationContext.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { ArrowLeft, Check, Pin, Tag as TagIcon, X, Palette } from 'lucide-react';
 
 function NoteForm() {
@@ -11,6 +13,7 @@ function NoteForm() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const { isDark } = useTheme();
+  const { showNotification } = useNotification();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState([]);
@@ -18,6 +21,9 @@ function NoteForm() {
   const [isPinned, setIsPinned] = useState(false);
   const [color, setColor] = useState('default');
   const [error, setError] = useState('');
+  const [originalData, setOriginalData] = useState(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
 
   const isEdit = !!id;
 
@@ -45,17 +51,80 @@ function NoteForm() {
       setTags(data.tags || []);
       setIsPinned(data.isPinned || false);
       setColor(data.color || 'default');
+      setOriginalData({
+        title: data.title,
+        content: data.content,
+        tags: data.tags || [],
+        isPinned: data.isPinned || false,
+        color: data.color || 'default',
+      });
+    } else {
+      // For new notes, set empty original data
+      setOriginalData({
+        title: '',
+        content: '',
+        tags: [],
+        isPinned: false,
+        color: 'default',
+      });
     }
   }, [data, isEdit]);
+
+  // Track unsaved changes and show warning on leave
+  const hasChanges = () => {
+    if (!originalData) return false;
+    return (
+      title !== originalData.title ||
+      content !== originalData.content ||
+      JSON.stringify(tags) !== JSON.stringify(originalData.tags) ||
+      isPinned !== originalData.isPinned ||
+      color !== originalData.color
+    );
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [title, content, tags, isPinned, color, originalData]);
 
   const saveMutation = useMutation({
     mutationFn: (noteData) =>
       isEdit ? notesAPI.updateNote(id, noteData) : notesAPI.createNote(noteData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      showNotification(
+        isEdit ? 'Note updated successfully' : 'Note created successfully',
+        'success'
+      );
       navigate('/notes');
     },
+    onError: () => {
+      showNotification('Failed to save note', 'error');
+    },
   });
+
+  const handleNavigateBack = () => {
+    if (hasChanges()) {
+      setShowLeaveConfirm(true);
+      setPendingNavigation('/notes');
+    } else {
+      navigate('/notes');
+    }
+  };
+
+  const handleConfirmLeave = () => {
+    setShowLeaveConfirm(false);
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,7 +152,7 @@ function NoteForm() {
       <header className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
           <button
-            onClick={() => navigate('/notes')}
+            onClick={handleNavigateBack}
             className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition font-medium"
           >
             <ArrowLeft size={20} />
@@ -212,6 +281,18 @@ function NoteForm() {
           </div>
         </form>
       </main>
+
+      {/* Leave confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showLeaveConfirm}
+        title="Leave this note?"
+        message="Are you sure you want to leave this wisdom behind? Your changes won't be saved."
+        confirmText="Leave Anyway"
+        cancelText="Keep Working"
+        onConfirm={handleConfirmLeave}
+        onCancel={() => setShowLeaveConfirm(false)}
+        isDangerous={true}
+      />
     </div>
   );
 }

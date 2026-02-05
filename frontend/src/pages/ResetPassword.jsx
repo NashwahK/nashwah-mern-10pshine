@@ -76,13 +76,19 @@ function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 px-4 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 px-4 transition-colors duration-300">
       <button
         onClick={toggleTheme}
         className="fixed top-6 right-6 p-3 rounded-full bg-white dark:bg-zinc-800 shadow-lg hover:shadow-xl transition-all border border-zinc-200 dark:border-zinc-700"
       >
         {isDark ? <Sun size={20} className="text-yellow-500" /> : <Moon size={20} className="text-zinc-700" />}
       </button>
+
+      <div className="absolute top-6 left-6">
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white" style={{ fontFamily: '"Caveat", cursive' }}>
+          Pendown
+        </h1>
+      </div>
 
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg p-8 space-y-6 border border-zinc-200 dark:border-zinc-700">

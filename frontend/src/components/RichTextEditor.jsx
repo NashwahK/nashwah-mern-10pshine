@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -16,14 +16,16 @@ import {
   Table as TableIcon, Link as LinkIcon, Palette, Highlighter
 } from 'lucide-react';
 import InputModal from './InputModal';
-
-import { useEffect } from 'react';
+import ColorPickerModal from './ColorPickerModal';
+import FileUploadModal from './FileUploadModal';
 
 export default function RichTextEditor({ content, onChange, noteColor = 'default' }) {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [colorModalOpen, setColorModalOpen] = useState(false);
   const [highlightModalOpen, setHighlightModalOpen] = useState(false);
+  const initialContentRef = useRef(null);
+  const hasInitializedRef = useRef(false);
 
   // build extensions and dedupe by name to avoid duplicate extension warnings
   const _extensions = [
@@ -32,15 +34,42 @@ export default function RichTextEditor({ content, onChange, noteColor = 'default
       orderedList: { keepMarks: true, keepAttributes: false },
       blockquote: { HTMLAttributes: { class: 'border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 italic' } },
     }),
-    Image,
-    Table.configure({ resizable: true }),
+    Image.configure({
+      allowBase64: true,
+      HTMLAttributes: {
+        class: 'max-w-full h-auto rounded-lg',
+      },
+    }),
+    Table.configure({ 
+      resizable: true,
+      handleWidth: 5,
+      cellMinWidth: 50,
+    }),
     TableRow,
-    TableHeader,
-    TableCell,
+    TableHeader.configure({
+      HTMLAttributes: {
+        class: 'bg-zinc-100 dark:bg-zinc-800',
+      },
+    }),
+    TableCell.configure({
+      HTMLAttributes: {
+        class: 'border border-zinc-300 dark:border-zinc-700 px-3 py-2',
+      },
+    }),
     TextStyle,
     Color,
-    Highlight.configure({ multicolor: true }),
-    Link.configure({ openOnClick: false }),
+    Highlight.configure({ 
+      multicolor: true,
+      HTMLAttributes: {
+        class: 'rounded-sm',
+      },
+    }),
+    Link.configure({ 
+      openOnClick: false,
+      HTMLAttributes: {
+        class: 'text-blue-600 dark:text-blue-400 underline cursor-pointer',
+      },
+    }),
   ];
 
   const extensions = Array.from(new Map(_extensions.map(e => [e.name, e])).values());
@@ -48,20 +77,27 @@ export default function RichTextEditor({ content, onChange, noteColor = 'default
   const editor = useEditor({
     extensions,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    autofocus: false,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4 prose-table:border-collapse prose-td:border prose-td:border-zinc-300 dark:prose-td:border-zinc-700 prose-th:border prose-th:border-zinc-300 dark:prose-th:border-zinc-700 prose-th:bg-zinc-100 dark:prose-th:bg-zinc-800 prose-td:p-2 prose-th:p-2',
+        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4 prose-table:border-collapse prose-table:w-full prose-td:border prose-td:border-zinc-300 dark:prose-td:border-zinc-700 prose-th:border prose-th:border-zinc-300 dark:prose-th:border-zinc-700 prose-th:bg-zinc-100 dark:prose-th:bg-zinc-800 prose-td:p-2 prose-th:p-2 prose-img:rounded-lg',
       },
     },
   });
 
-  // Set content after editor initialization to avoid initialization-time DOM issues
+  // Set content after editor initialization and when content prop changes from external source
   useEffect(() => {
     if (!editor) return;
+
     try {
-      if (content) editor.commands.setContent(content);
+      const currentContent = editor.getHTML();
+      // Only update if the new content is different from what's currently in the editor
+      // This prevents resetting when parent updates from our own onChange callback
+      if (content && content !== currentContent && content !== initialContentRef.current) {
+        editor.commands.setContent(content);
+        initialContentRef.current = content;
+      }
     } catch (err) {
-      // If content is malformed, fallback to empty
       console.error('Failed to set editor content:', err);
       editor.commands.clearContent();
     }
@@ -80,11 +116,33 @@ export default function RichTextEditor({ content, onChange, noteColor = 'default
     return `https://${s}`;
   };
 
-  const handleImageSubmit = (url) => {
-    const normalized = normalizeUrl(url);
-    if (normalized) {
-      editor.chain().focus().setImage({ src: normalized }).run();
+  const handleImageSubmit = (dataUrl) => {
+    if (!dataUrl) {
+      console.error('No image data provided');
+      return;
     }
+
+    try {
+      if (!editor) {
+        console.error('Editor not initialized');
+        return;
+      }
+
+      // Ensure editor has focus
+      editor.chain().focus().run();
+
+      // Insert the image
+      const result = editor.chain().focus().setImage({ src: dataUrl }).run();
+
+      if (!result) {
+        console.error('Failed to insert image');
+      } else {
+        console.log('Image inserted successfully');
+      }
+    } catch (error) {
+      console.error('Error inserting image:', error);
+    }
+
     setImageModalOpen(false);
   };
 
@@ -99,15 +157,17 @@ export default function RichTextEditor({ content, onChange, noteColor = 'default
 
   const handleColorSubmit = (color) => {
     if (!color) {
+      // Remove color formatting
+      try {
+        editor.chain().focus().unsetColor().run();
+      } catch (err) {
+        console.error('unsetColor failed', err);
+      }
       setColorModalOpen(false);
       return;
     }
-    let c = color.trim();
-    if (/^[0-9a-fA-F]{3}$/.test(c) || /^[0-9a-fA-F]{6}$/.test(c)) {
-      c = `#${c}`;
-    }
     try {
-      editor.chain().focus().setColor(c).run();
+      editor.chain().focus().setColor(color).run();
     } catch (err) {
       console.error('setColor failed', err);
     }
@@ -115,7 +175,11 @@ export default function RichTextEditor({ content, onChange, noteColor = 'default
   };
 
   const handleHighlightSubmit = (color) => {
-    editor.chain().focus().setHighlight({ color }).run();
+    try {
+      editor.chain().focus().setHighlight({ color }).run();
+    } catch (err) {
+      console.error('setHighlight failed', err);
+    }
     setHighlightModalOpen(false);
   };
 
@@ -268,12 +332,11 @@ export default function RichTextEditor({ content, onChange, noteColor = 'default
       </div>
 
       {/* Modals */}
-      <InputModal
+      <FileUploadModal
         isOpen={imageModalOpen}
         onClose={() => setImageModalOpen(false)}
         onSubmit={handleImageSubmit}
         title="Insert Image"
-        placeholder="Enter image URL"
       />
       <InputModal
         isOpen={linkModalOpen}
@@ -282,19 +345,19 @@ export default function RichTextEditor({ content, onChange, noteColor = 'default
         title="Insert Link"
         placeholder="Enter URL"
       />
-      <InputModal
+      <ColorPickerModal
         isOpen={colorModalOpen}
         onClose={() => setColorModalOpen(false)}
         onSubmit={handleColorSubmit}
         title="Text Color"
-        placeholder="Enter color (e.g., #ff0000 or red)"
+        type="text"
       />
-      <InputModal
+      <ColorPickerModal
         isOpen={highlightModalOpen}
         onClose={() => setHighlightModalOpen(false)}
         onSubmit={handleHighlightSubmit}
         title="Highlight Color"
-        placeholder="Enter color (e.g., #ffff00 or yellow)"
+        type="highlight"
       />
     </>
   );
