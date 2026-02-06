@@ -23,6 +23,16 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
+  // Auto-logout when app/browser closes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      localStorage.removeItem('token');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   const login = async (email, password) => {
     const res = await authAPI.login({ email, password });
     const newToken = res.data.data.token;

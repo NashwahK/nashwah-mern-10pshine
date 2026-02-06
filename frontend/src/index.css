@@ -1,5 +1,8 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 * {
   scroll-behavior: smooth;
@@ -8,4 +11,75 @@
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ProseMirror editor content styles - using regular CSS instead of @apply */
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ul li,
+.ProseMirror ol li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror ul li p,
+.ProseMirror ol li p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Table styles */
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  table-layout: fixed;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  border: 2px solid #d4d4d8;
+  padding: 0.5rem;
+  vertical-align: top;
+  position: relative;
+}
+
+.dark .ProseMirror td,
+.dark .ProseMirror th {
+  border-color: #52525b;
+}
+
+.ProseMirror th {
+  background-color: #f4f4f5;
+  font-weight: bold;
+  text-align: left;
+}
+
+.dark .ProseMirror th {
+  background-color: #27272a;
+}
+
+.ProseMirror .selectedCell {
+  background-color: #e4e4e7;
+}
+
+.dark .ProseMirror .selectedCell {
+  background-color: #3f3f46;
 }
