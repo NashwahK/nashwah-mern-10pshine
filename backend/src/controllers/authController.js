@@ -62,3 +62,50 @@ exports.getCurrentUser = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      throw new ValidationError('Email is required');
+    }
+
+    await AuthService.forgotPassword(email);
+
+    res.json({
+      success: true,
+      message: 'Password reset link sent to your email'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    if (!password || !confirmPassword) {
+      throw new ValidationError('Password and confirmation are required');
+    }
+
+    if (password !== confirmPassword) {
+      throw new ValidationError('Passwords do not match');
+    }
+
+    if (password.length < 6) {
+      throw new ValidationError('Password must be at least 6 characters');
+    }
+
+    await AuthService.resetPassword(token, password);
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};

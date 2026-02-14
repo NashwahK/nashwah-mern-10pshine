@@ -15,6 +15,20 @@ const noteSchema = new mongoose.Schema({
   content: {
     type: String,
     required: [true, 'Content is required']
+  },
+  tags: [{
+    type: String,
+    trim: true,
+    lowercase: true
+  }],
+  isPinned: {
+    type: Boolean,
+    default: false
+  },
+  color: {
+    type: String,
+    default: 'default',
+    enum: ['default', 'yellow', 'pink', 'blue', 'green', 'purple', 'orange']
   }
 }, {
   timestamps: true
@@ -22,6 +36,8 @@ const noteSchema = new mongoose.Schema({
 
 // Index for faster queries
 noteSchema.index({ user: 1, createdAt: -1 });
+noteSchema.index({ user: 1, tags: 1 });
+noteSchema.index({ user: 1, isPinned: -1, createdAt: -1 });
 
 // Remove __v from JSON output
 noteSchema.methods.toJSON = function() {
