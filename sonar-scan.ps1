@@ -1,10 +1,15 @@
 $SONAR_HOST = "https://sonarcloud.io"
 $SONAR_ORG = "nashwahk"
-$SONAR_TOKEN = "c25d327a8b813cba63027e57f85cffa87033e683"
+# Read token from environment variable to avoid committing secrets
+$SONAR_TOKEN = $env:SONAR_TOKEN
+if (-not $SONAR_TOKEN) {
+  Write-Host "Warning: SONAR_TOKEN environment variable is not set. Aborting scan." -ForegroundColor Red
+  exit 1
+}
 
 # Backend Analysis
 Write-Host "=== Scanning Backend Code ===" -ForegroundColor Cyan
-cd ./backend
+Set-Location ./backend
 npx sonar-scanner `
   -Dsonar.projectKey=nashwah-notes-backend `
   -Dsonar.organization=$SONAR_ORG `
@@ -18,7 +23,7 @@ Write-Host "Backend scan complete. Check: https://sonarcloud.io/dashboard?id=nas
 # Frontend Analysis
 Write-Host ""
 Write-Host "=== Scanning Frontend Code ===" -ForegroundColor Cyan
-cd ../frontend
+Set-Location ../frontend
 npx sonar-scanner `
   -Dsonar.projectKey=nashwah-notes-frontend `
   -Dsonar.organization=$SONAR_ORG `
