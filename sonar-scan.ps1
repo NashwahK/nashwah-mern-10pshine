@@ -9,7 +9,7 @@ if (-not $SONAR_TOKEN) {
 
 # Backend Analysis
 Write-Host "=== Scanning Backend Code ===" -ForegroundColor Cyan
-cd ./backend
+Set-Location ./backend
 npx sonar-scanner `
   -Dsonar.projectKey=nashwah-notes-backend `
   -Dsonar.organization=$SONAR_ORG `
@@ -23,7 +23,7 @@ Write-Host "Backend scan complete. Check: https://sonarcloud.io/dashboard?id=nas
 # Frontend Analysis
 Write-Host ""
 Write-Host "=== Scanning Frontend Code ===" -ForegroundColor Cyan
-cd ../frontend
+Set-Location ../frontend
 npx sonar-scanner `
   -Dsonar.projectKey=nashwah-notes-frontend `
   -Dsonar.organization=$SONAR_ORG `
